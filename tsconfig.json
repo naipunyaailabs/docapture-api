@@ -1,0 +1,66 @@
+{
+  "compilerOptions": {
+    // ========================================================
+    // 🔧 Environment setup & language features
+    // ========================================================
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "allowJs": true,
+
+    // ========================================================
+    // 🧩 Bundler mode (optimized for Bun / Vite / Next.js)
+    // ========================================================
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+
+    // ========================================================
+    // ✅ Best practices
+    // ========================================================
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+
+    // ========================================================
+    // ⚙️ Diagnostics control (keep false if you like warnings)
+    // ========================================================
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // ========================================================
+    // 🌐 Type roots & Node environment support
+    // ========================================================
+    "types": ["node"],             // add NodeJS global types
+    "typeRoots": ["./types", "./node_modules/@types"],
+
+    // ========================================================
+    // 🧭 Path resolution (optional, if you use @ aliases)
+    // ========================================================
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+
+  // ==========================================================
+  // 🧩 Include your code and custom type declarations
+  // ==========================================================
+  "include": [
+    "src",
+    "services",
+    "routes",
+    "types"
+  ],
+
+  // ==========================================================
+  // 🚫 Explicitly ignore build artifacts
+  // ==========================================================
+  "exclude": ["node_modules", "dist", "build"]
+}
+  

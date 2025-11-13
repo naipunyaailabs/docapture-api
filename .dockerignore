@@ -1,0 +1,63 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Bun
+bun.lockb
+
+# Build output
+dist
+build
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+*.test.ts
+*.spec.ts
+test
+__tests__
+
+# Documentation
+*.md
+!README.md
+
+# Temporary files
+*.log
+*.tmp
+temp
+tmp
+uploads
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python

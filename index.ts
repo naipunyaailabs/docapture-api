@@ -1,0 +1,146 @@
+import { serve } from "bun";
+import { uploadHandler } from "./routes/upload";
+import { extractHandler } from "./routes/extract";
+import { summarizeHandler } from "./routes/summarize";
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { authenticateRequest } from "./utils/auth";
+import { PORT, logConfig, validateConfig } from "./utils/config";
+import { summarizeRfpHandler } from "./routes/summarizeRfp";
+import { createRfpHandler } from "./routes/createRfp";
+import { downloadRfpHandler } from "./routes/downloadRfp";
+import { authHandler } from "./routes/auth";
+import { servicesHandler } from "./routes/services";
+import { processDocumentHandler } from "./routes/processDocument";
+import { processWithAuthHandler } from "./routes/processWithAuth";
+import { aguiHandler, aguiSSEHandler } from "./routes/agui";
+import { subscriptionHandler } from "./routes/subscription";
+import { historyHandler } from "./routes/history";
+import DatabaseService from "./services/database";
+
+// Validate configuration on startup
+try {
+  validateConfig();
+  logConfig();
+} catch (error) {
+  console.error("Configuration error:", (error as Error).message);
+  process.exit(1);
+}
+
+// Initialize database connection
+DatabaseService.connect().catch(err => {
+  console.error("Failed to connect to database:", err);
+  process.exit(1);
+});
+
+const projectHtml = readFileSync(join(__dirname, 'project.html'), 'utf-8');
+
+const addCors = (response: Response) => {
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+  response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
+  return response;
+};
+
+const server = serve({
+  fetch: async (req) => {
+    const url = new URL(req.url);
+
+    // Handle CORS preflight requests for all routes
+    if (req.method === "OPTIONS") {
+      return addCors(new Response(null, { status: 204 }));
+    }
+
+    // Serve project.html for root path (no authentication required)
+    if (url.pathname === "/") {
+      return addCors(new Response(projectHtml, {
+        headers: {
+          "Content-Type": "text/html",
+        },
+      }));
+    }
+
+    // Handle authentication routes (no authentication required)
+    if (url.pathname.startsWith("/auth/")) {
+      const response = await authHandler(req);
+      return addCors(response);
+    }
+
+    // Handle services routes
+    if (url.pathname.startsWith("/services")) {
+      const response = await servicesHandler(req);
+      return addCors(response);
+    }
+
+    // Handle subscription routes (requires user authentication)
+    if (url.pathname.startsWith("/subscription/")) {
+      const response = await subscriptionHandler(req);
+      return addCors(response);
+    }
+
+    // Handle history routes (requires user authentication)
+    if (url.pathname.startsWith("/history")) {
+      const response = await historyHandler(req);
+      return addCors(response);
+    }
+
+    // Handle authenticated document processing (requires user authentication)
+    if (url.pathname.startsWith("/process-auth/")) {
+      const response = await processWithAuthHandler(req);
+      return addCors(response);
+    }
+
+    // Handle AG-UI protocol routes
+    if (url.pathname.startsWith("/agui/")) {
+      const response = await aguiHandler(req);
+      return addCors(response);
+    }
+
+    // Handle AG-UI SSE routes
+    if (url.pathname.startsWith("/agui-sse")) {
+      const response = await aguiSSEHandler(req);
+      return response; // SSE responses handle CORS differently
+    }
+
+    // Apply authentication to all API routes except the ones we want to keep public
+    const protectedRoutes = ["/upload", "/extract", "/summarize", "/reset", "/create-rfp", "/download-rfp"];
+    if (protectedRoutes.includes(url.pathname) && req.method === "POST") {
+      const authResponse = authenticateRequest(req);
+      if (authResponse) {
+        return addCors(authResponse);
+      }
+    }
+
+    let response: Response;
+    try {
+      if (req.method === "POST" && url.pathname === "/upload") {
+        response = await uploadHandler(req);
+      } else if (req.method === "POST" && url.pathname === "/extract") {
+        response = await extractHandler(req);
+      } else if (req.method === "POST" && url.pathname === "/summarize") {
+        response = await summarizeHandler(req);
+      } else if (req.method === "POST" && url.pathname === "/summarize-rfp") {
+        response = await summarizeRfpHandler(req);
+      } else if (req.method === "POST" && url.pathname === "/create-rfp") {
+        response = await createRfpHandler(req);
+      } else if (req.method === "POST" && url.pathname === "/download-rfp") {
+        response = await downloadRfpHandler(req);
+      } else {
+        response = new Response("Not Found", { status: 404 });
+      }
+    } catch (error) {
+      console.error("[Server Error]:", error);
+      response = new Response(JSON.stringify({ error: "Internal server error" }), { 
+        status: 500, 
+        headers: { "Content-Type": "application/json" } 
+      });
+    }
+
+    return addCors(response);
+  },
+  port: PORT,
+});
+
+console.log(`Server running at http://localhost:${server.port}`);
+console.log(`API Key (for development): ${process.env.API_KEY || 'Not set'}`);
