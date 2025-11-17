@@ -13,70 +13,209 @@ export async function summarizeHandler(req: Request, preloadedFormData?: FormDat
       return createErrorResponse("No document provided or invalid file", 400);
     }
     
-    // Get user prompt from form data
+    // Get user prompt and summary length from form data
     const userPrompt: string = formData.get("prompt")?.toString() || "";
+    const summaryLength: string = formData.get("length")?.toString() || "medium";
     const buffer = await file.arrayBuffer();
     
     // Use extractDoc to get text content
     const text: string = await extractDoc(Buffer.from(buffer), file.name, file.type);
 
-    // Create summarization prompt with Tailwind CSS formatting instructions
-    const summarizationPrompt: string = userPrompt.trim() 
-      ? `Summarize the following document focusing on: ${userPrompt}. Format the summary using HTML with Tailwind CSS classes:
-      <div class="min-h-screen bg-gray-50 py-12">
-        <div class="max-w-4xl mx-auto px-4">
-          <div class="bg-white rounded-xl shadow-lg p-8">
-            <div class="space-y-8">
-              <h2 class="text-3xl font-bold text-gray-900 text-center">Summary</h2>
-              <div class="prose prose-lg text-gray-700">
-                <div class="space-y-6">
-                  <h3 class="text-2xl font-semibold text-gray-800">Key Points</h3>
-                  <ul class="list-disc pl-8 space-y-3">
-                    <li class="text-gray-700 leading-relaxed">Point 1</li>
-                    <li class="text-gray-700 leading-relaxed">Point 2</li>
-                  </ul>
-                </div>
-                <div class="space-y-6">
-                  <h3 class="text-2xl font-semibold text-gray-800">Main Ideas</h3>
-                  <p class="text-gray-700 leading-relaxed">Main idea description</p>
-                </div>
-              </div>
+    // Create summarization prompt based on length preference
+    let summarizationPrompt: string;
+    let systemMessage: string;
+    
+    if (summaryLength.toLowerCase() === "detailed") {
+      systemMessage = "You are an advanced document analyzer. Create comprehensive, detailed summaries that thoroughly cover all major topics, subtopics, supporting details, and nuances. Provide in-depth analysis with proper structure using HTML with Tailwind CSS classes.";
+      summarizationPrompt = userPrompt.trim()
+        ? `Create a detailed, comprehensive summary of the following document focusing on: ${userPrompt}. Include:
+- Complete overview and context
+- All major sections with detailed explanations
+- Key themes with thorough analysis
+- Important details and supporting information
+- Conclusions and implications
+
+Format using this HTML structure with Tailwind CSS:
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <div class="space-y-8">
+        <h2 class="text-3xl font-bold text-gray-900 text-center">Comprehensive Analysis</h2>
+        <div class="prose prose-lg text-gray-700">
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Executive Overview</h3>
+            <p class="text-gray-700 leading-relaxed">Detailed context and scope</p>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Detailed Analysis</h3>
+            <div class="ml-4 space-y-4">
+              <div><h4 class="text-xl font-medium text-gray-800">Section</h4>
+              <p class="text-gray-700 leading-relaxed ml-4">In-depth coverage</p></div>
             </div>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Key Findings</h3>
+            <ul class="list-disc pl-8 space-y-3">
+              <li class="text-gray-700 leading-relaxed">Finding with explanation</li>
+            </ul>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Implications</h3>
+            <p class="text-gray-700 leading-relaxed">Impact and significance</p>
           </div>
         </div>
       </div>
-      Document: ${text}`
-      : `Provide a comprehensive summary of the following document. Include key points, main ideas, and important details. Format the summary using HTML with Tailwind CSS classes:
-      <div class="min-h-screen bg-gray-50 py-12">
-        <div class="max-w-4xl mx-auto px-4">
-          <div class="bg-white rounded-xl shadow-lg p-8">
-            <div class="space-y-8">
-              <h2 class="text-3xl font-bold text-gray-900 text-center">Document Summary</h2>
-              <div class="prose prose-lg text-gray-700">
-                <div class="space-y-6">
-                  <h3 class="text-2xl font-semibold text-gray-800">Overview</h3>
-                  <p class="text-gray-700 leading-relaxed">Overall summary text</p>
-                </div>
-                <div class="space-y-6">
-                  <h3 class="text-2xl font-semibold text-gray-800">Key Insights</h3>
-                  <ul class="list-disc pl-8 space-y-3">
-                    <li class="text-gray-700 leading-relaxed">Insight 1</li>
-                    <li class="text-gray-700 leading-relaxed">Insight 2</li>
-                  </ul>
-                </div>
-                <div class="space-y-6">
-                  <h3 class="text-2xl font-semibold text-gray-800">Important Details</h3>
-                  <p class="text-gray-700 leading-relaxed">Details description</p>
-                </div>
-              </div>
+    </div>
+  </div>
+</div>
+Document: ${text}`
+        : `Create a comprehensive, detailed summary of the following document. Provide thorough coverage of all aspects including complete context, detailed analysis of all major sections, key findings with explanations, supporting details, and implications.
+
+Format using this HTML structure with Tailwind CSS:
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <div class="space-y-8">
+        <h2 class="text-3xl font-bold text-gray-900 text-center">Comprehensive Summary</h2>
+        <div class="prose prose-lg text-gray-700">
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Document Overview</h3>
+            <p class="text-gray-700 leading-relaxed">Complete overview with context</p>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Main Content</h3>
+            <div class="ml-4 space-y-4">
+              <div><h4 class="text-xl font-medium text-gray-800">Topic</h4>
+              <p class="text-gray-700 leading-relaxed ml-4">Detailed analysis</p></div>
             </div>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Key Insights</h3>
+            <ul class="list-disc pl-8 space-y-3">
+              <li class="text-gray-700 leading-relaxed">Insight with comprehensive explanation</li>
+            </ul>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Conclusions</h3>
+            <p class="text-gray-700 leading-relaxed">Impact and implications</p>
           </div>
         </div>
       </div>
-      Document: ${text}`;
+    </div>
+  </div>
+</div>
+Document: ${text}`;
+    } else if (summaryLength.toLowerCase() === "short") {
+      systemMessage = "You are a concise document summarizer. Create brief summaries that capture only the most essential points. Be direct and to the point while using HTML with Tailwind CSS classes.";
+      summarizationPrompt = userPrompt.trim()
+        ? `Provide a brief summary of the following document focusing on: ${userPrompt}. Include only the most essential points.
+
+Format using this HTML structure with Tailwind CSS:
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <div class="space-y-8">
+        <h2 class="text-3xl font-bold text-gray-900 text-center">Quick Summary</h2>
+        <div class="prose prose-lg text-gray-700">
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Essential Points</h3>
+            <ul class="list-disc pl-8 space-y-3">
+              <li class="text-gray-700 leading-relaxed">Key point</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+Document: ${text}`
+        : `Provide a brief summary of the following document. Include only the most essential information in a concise format.
+
+Format using this HTML structure with Tailwind CSS:
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <div class="space-y-8">
+        <h2 class="text-3xl font-bold text-gray-900 text-center">Quick Summary</h2>
+        <div class="prose prose-lg text-gray-700">
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Key Points</h3>
+            <ul class="list-disc pl-8 space-y-3">
+              <li class="text-gray-700 leading-relaxed">Essential information</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+Document: ${text}`;
+    } else {
+      // Medium length (default)
+      systemMessage = "You are an advanced document summarizer. Create balanced summaries that cover key points, main ideas, and important details while maintaining clarity and conciseness. Format your response using HTML with Tailwind CSS classes.";
+      summarizationPrompt = userPrompt.trim()
+        ? `Summarize the following document focusing on: ${userPrompt}. Include key points, main ideas, and important details.
+
+Format using this HTML structure with Tailwind CSS:
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <div class="space-y-8">
+        <h2 class="text-3xl font-bold text-gray-900 text-center">Summary</h2>
+        <div class="prose prose-lg text-gray-700">
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Overview</h3>
+            <p class="text-gray-700 leading-relaxed">Main overview</p>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Key Points</h3>
+            <ul class="list-disc pl-8 space-y-3">
+              <li class="text-gray-700 leading-relaxed">Point</li>
+            </ul>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Important Details</h3>
+            <p class="text-gray-700 leading-relaxed">Details</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+Document: ${text}`
+        : `Provide a comprehensive summary of the following document. Include key points, main ideas, and important details.
+
+Format using this HTML structure with Tailwind CSS:
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <div class="space-y-8">
+        <h2 class="text-3xl font-bold text-gray-900 text-center">Document Summary</h2>
+        <div class="prose prose-lg text-gray-700">
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Overview</h3>
+            <p class="text-gray-700 leading-relaxed">Summary overview</p>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Key Insights</h3>
+            <ul class="list-disc pl-8 space-y-3">
+              <li class="text-gray-700 leading-relaxed">Insight</li>
+            </ul>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Important Details</h3>
+            <p class="text-gray-700 leading-relaxed">Key details</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+Document: ${text}`;
+    }
 
     const summary: string = await unifiedChatCompletion(
-      "You are an advanced document summarizer. You can understand complex documents and create concise, accurate summaries. Format your response using HTML with Tailwind CSS classes. Focus on the most important information and maintain the document's key meaning.",
+      systemMessage,
       summarizationPrompt
     );
 
