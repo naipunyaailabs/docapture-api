@@ -7,6 +7,7 @@ import { summarizeHandler } from "./summarize";
 import { summarizeRfpHandler } from "./summarizeRfp";
 import { createRfpHandler } from "./createRfp";
 import { uploadHandler } from "./upload";
+import { compareQuotationsHandler } from "./compareQuotations";
 
 /**
  * Enhanced document processing handler with user authentication,
@@ -101,6 +102,9 @@ export async function processWithAuthHandler(req: Request): Promise<Response> {
         break;
       case "document-summarizer":
         response = await summarizeHandler(req, formData as any);
+        break;
+      case "quotation-compare":
+        response = await compareQuotationsHandler(req, formData as any);
         break;
       case "rfp-creator":
         response = await createRfpHandler(req); // Uses JSON, not FormData

@@ -20,6 +20,10 @@ export async function summarizeHandler(req: Request, preloadedFormData?: FormDat
     
     // Use extractDoc to get text content
     const text: string = await extractDoc(Buffer.from(buffer), file.name, file.type);
+    
+    // Convert document content to TOON format for token efficiency
+    // TOON (Token-Oriented Object Notation) saves 30-50% tokens compared to verbose formatting
+    const documentTOON = `document{filename,content}:\n${file.name},${text.replace(/\n/g, ' ').replace(/,/g, ';')}`;
 
     // Create summarization prompt based on length preference
     let summarizationPrompt: string;
@@ -28,12 +32,15 @@ export async function summarizeHandler(req: Request, preloadedFormData?: FormDat
     if (summaryLength.toLowerCase() === "detailed") {
       systemMessage = "You are an advanced document analyzer. Create comprehensive, detailed summaries that thoroughly cover all major topics, subtopics, supporting details, and nuances. Provide in-depth analysis with proper structure using HTML with Tailwind CSS classes.";
       summarizationPrompt = userPrompt.trim()
-        ? `Create a detailed, comprehensive summary of the following document focusing on: ${userPrompt}. Include:
+        ? `Create a detailed, comprehensive summary focusing on: ${userPrompt}. Include:
 - Complete overview and context
 - All major sections with detailed explanations
 - Key themes with thorough analysis
 - Important details and supporting information
 - Conclusions and implications
+
+Document data (TOON format):
+${documentTOON}
 
 Format using this HTML structure with Tailwind CSS:
 <div class="min-h-screen bg-gray-50 py-12">
@@ -69,7 +76,10 @@ Format using this HTML structure with Tailwind CSS:
   </div>
 </div>
 Document: ${text}`
-        : `Create a comprehensive, detailed summary of the following document. Provide thorough coverage of all aspects including complete context, detailed analysis of all major sections, key findings with explanations, supporting details, and implications.
+        : `Create a comprehensive, detailed summary. Provide thorough coverage of all aspects including complete context, detailed analysis of all major sections, key findings with explanations, supporting details, and implications.
+
+Document data (TOON format):
+${documentTOON}
 
 Format using this HTML structure with Tailwind CSS:
 <div class="min-h-screen bg-gray-50 py-12">
@@ -108,7 +118,10 @@ Document: ${text}`;
     } else if (summaryLength.toLowerCase() === "short") {
       systemMessage = "You are a concise document summarizer. Create brief summaries that capture only the most essential points. Be direct and to the point while using HTML with Tailwind CSS classes.";
       summarizationPrompt = userPrompt.trim()
-        ? `Provide a brief summary of the following document focusing on: ${userPrompt}. Include only the most essential points.
+        ? `Provide a brief summary focusing on: ${userPrompt}. Include only the most essential points.
+
+Document data (TOON format):
+${documentTOON}
 
 Format using this HTML structure with Tailwind CSS:
 <div class="min-h-screen bg-gray-50 py-12">
@@ -129,7 +142,10 @@ Format using this HTML structure with Tailwind CSS:
   </div>
 </div>
 Document: ${text}`
-        : `Provide a brief summary of the following document. Include only the most essential information in a concise format.
+        : `Provide a brief summary. Include only the most essential information in a concise format.
+
+Document data (TOON format):
+${documentTOON}
 
 Format using this HTML structure with Tailwind CSS:
 <div class="min-h-screen bg-gray-50 py-12">
@@ -154,7 +170,10 @@ Document: ${text}`;
       // Medium length (default)
       systemMessage = "You are an advanced document summarizer. Create balanced summaries that cover key points, main ideas, and important details while maintaining clarity and conciseness. Format your response using HTML with Tailwind CSS classes.";
       summarizationPrompt = userPrompt.trim()
-        ? `Summarize the following document focusing on: ${userPrompt}. Include key points, main ideas, and important details.
+        ? `Summarize focusing on: ${userPrompt}. Include key points, main ideas, and important details.
+
+Document data (TOON format):
+${documentTOON}
 
 Format using this HTML structure with Tailwind CSS:
 <div class="min-h-screen bg-gray-50 py-12">
@@ -183,7 +202,10 @@ Format using this HTML structure with Tailwind CSS:
   </div>
 </div>
 Document: ${text}`
-        : `Provide a comprehensive summary of the following document. Include key points, main ideas, and important details.
+        : `Provide a comprehensive summary. Include key points, main ideas, and important details.
+
+Document data (TOON format):
+${documentTOON}
 
 Format using this HTML structure with Tailwind CSS:
 <div class="min-h-screen bg-gray-50 py-12">

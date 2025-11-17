@@ -16,9 +16,14 @@ export async function summarizeRfpHandler(req: Request, preloadedFormData?: Form
 
     const buffer = await file.arrayBuffer();
     const text: string = await extractDoc(Buffer.from(buffer), file.name, file.type);
+    
+    // Convert document content to TOON format for token efficiency
+    // TOON (Token-Oriented Object Notation) saves 30-50% tokens
+    const documentTOON = `rfp{filename,content}:\n${file.name},${text.replace(/\n/g, ' ').replace(/,/g, ';')}`;
 
     // Use the centralized agent for LLM invocation and validation
-    const agentResult = await runRfpAgent({ documentText: text });
+    // Pass TOON formatted data for better token efficiency
+    const agentResult = await runRfpAgent({ documentText: documentTOON });
 
     if (!agentResult.schemaValid) {
       // Provide a more detailed error message

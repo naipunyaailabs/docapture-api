@@ -9,6 +9,7 @@ import { PORT, logConfig, validateConfig } from "./utils/config";
 import { summarizeRfpHandler } from "./routes/summarizeRfp";
 import { createRfpHandler } from "./routes/createRfp";
 import { downloadRfpHandler } from "./routes/downloadRfp";
+import { compareQuotationsHandler } from "./routes/compareQuotations";
 import { authHandler } from "./routes/auth";
 import { servicesHandler } from "./routes/services";
 import { processDocumentHandler } from "./routes/processDocument";
@@ -104,7 +105,7 @@ const server = serve({
     }
 
     // Apply authentication to all API routes except the ones we want to keep public
-    const protectedRoutes = ["/upload", "/extract", "/summarize", "/reset", "/create-rfp", "/download-rfp"];
+    const protectedRoutes = ["/upload", "/extract", "/summarize", "/reset", "/create-rfp", "/download-rfp", "/compare-quotations"];
     if (protectedRoutes.includes(url.pathname) && req.method === "POST") {
       const authResponse = authenticateRequest(req);
       if (authResponse) {
@@ -126,6 +127,8 @@ const server = serve({
         response = await createRfpHandler(req);
       } else if (req.method === "POST" && url.pathname === "/download-rfp") {
         response = await downloadRfpHandler(req);
+      } else if (req.method === "POST" && url.pathname === "/compare-quotations") {
+        response = await compareQuotationsHandler(req);
       } else {
         response = new Response("Not Found", { status: 404 });
       }

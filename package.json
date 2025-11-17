@@ -12,6 +12,7 @@
     "build": "bun build index.ts --outdir ./dist",
     "preview": "bun dist/index.js",
     "seed:services": "bun scripts/seedServices.ts",
+    "seed:quotation-compare": "bun scripts/seedQuotationCompareService.ts",
     "add:document-services": "bun scripts/addDocumentServices.ts",
     "update:document-services-only": "bun scripts/updateDocumentServicesOnly.ts"
   },
