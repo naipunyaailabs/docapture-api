@@ -36,19 +36,19 @@ DatabaseService.connect().catch(err => {
 
 const projectHtml = readFileSync(join(__dirname, 'project.html'), 'utf-8');
 
-const addCors = (response: Response) => {
+const addCors = (response: Response, request: Request) => {
   // Allow specific origins including api.docapture.com
   const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:5000",
-    "https://api.docapture.com"
+    "https://docapture.com"
   ];
   
   // Check if the request origin is in our allowed list
-  const requestOrigin = response.headers.get("Origin");
+  const requestOrigin = request.headers.get("Origin");
   const originToSet = requestOrigin && allowedOrigins.includes(requestOrigin) 
     ? requestOrigin 
-    : "https://api.docapture.com"; // Default to our domain if not matched
+    : "*"; // Allow all for development but you might want to restrict this
   
   response.headers.set("Access-Control-Allow-Origin", originToSet);
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -63,7 +63,7 @@ const server = serve({
 
     // Handle CORS preflight requests for all routes
     if (req.method === "OPTIONS") {
-      return addCors(new Response(null, { status: 204 }));
+      return addCors(new Response(null, { status: 204 }), req);
     }
 
     // Serve project.html for root path (no authentication required)
@@ -72,43 +72,43 @@ const server = serve({
         headers: {
           "Content-Type": "text/html",
         },
-      }));
+      }), req);
     }
 
     // Handle authentication routes (no authentication required)
     if (url.pathname.startsWith("/auth/")) {
       const response = await authHandler(req);
-      return addCors(response);
+      return addCors(response, req);
     }
 
     // Handle services routes
     if (url.pathname.startsWith("/services")) {
       const response = await servicesHandler(req);
-      return addCors(response);
+      return addCors(response, req);
     }
 
     // Handle subscription routes (requires user authentication)
     if (url.pathname.startsWith("/subscription/")) {
       const response = await subscriptionHandler(req);
-      return addCors(response);
+      return addCors(response, req);
     }
 
     // Handle history routes (requires user authentication)
     if (url.pathname.startsWith("/history")) {
       const response = await historyHandler(req);
-      return addCors(response);
+      return addCors(response, req);
     }
 
     // Handle authenticated document processing (requires user authentication)
     if (url.pathname.startsWith("/process-auth/")) {
       const response = await processWithAuthHandler(req);
-      return addCors(response);
+      return addCors(response, req);
     }
 
     // Handle AG-UI protocol routes
     if (url.pathname.startsWith("/agui/")) {
       const response = await aguiHandler(req);
-      return addCors(response);
+      return addCors(response, req);
     }
 
     // Handle AG-UI SSE routes
@@ -122,7 +122,7 @@ const server = serve({
     if (protectedRoutes.includes(url.pathname) && req.method === "POST") {
       const authResponse = authenticateRequest(req);
       if (authResponse) {
-        return addCors(authResponse);
+        return addCors(authResponse, req);
       }
     }
 
@@ -153,7 +153,7 @@ const server = serve({
       });
     }
 
-    return addCors(response);
+    return addCors(response, req);
   },
   port: PORT,
 });
