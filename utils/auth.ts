@@ -11,19 +11,20 @@ export function validateApiKey(req: Request): boolean {
   const authHeader = req.headers.get("Authorization");
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("[Auth] No valid Authorization header found");
+    console.log("[Auth] No valid Authorization header found for API key validation");
     return false;
   }
   
   const apiKey = authHeader.substring(7); // Remove "Bearer " prefix
   const validApiKey = process.env.API_KEY;
   
-  console.log(`[Auth] Received API key: ${apiKey.substring(0, 10)}...`);
-  console.log(`[Auth] Expected API key: ${validApiKey?.substring(0, 10)}...`);
+  console.log(`[Auth] Received API key: ${apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined'}`);
+  console.log(`[Auth] Expected API key: ${validApiKey ? `${validApiKey.substring(0, 10)}...` : 'undefined'}`);
+  console.log(`[Auth] API key length - Received: ${apiKey?.length || 0}, Expected: ${validApiKey?.length || 0}`);
   
   // If no API key is configured, allow all requests (development mode)
   if (!validApiKey) {
-    console.warn("No API_KEY configured in environment variables. Authentication is disabled.");
+    console.warn("[Auth] No API_KEY configured in environment variables. Authentication is disabled.");
     return true;
   }
   
@@ -87,17 +88,19 @@ export function authenticateRequest(req: Request): Response | null {
     return null;
   }
   
-  if (!validateApiKey(req)) {
+  // Try to validate either user token or API key
+  const authResult = validateAuthentication(req);
+  if (!authResult.isValid) {
     return new Response(
       JSON.stringify({ 
         error: "Unauthorized", 
-        message: "Invalid or missing API key" 
+        message: "Invalid or missing authentication credentials" 
       }), 
       { 
         status: 401, 
         headers: { 
           "Content-Type": "application/json",
-          "WWW-Authenticate": "Bearer realm=\"API Key Required\"" 
+          "WWW-Authenticate": "Bearer realm=\"Authentication Required\"" 
         } 
       }
     );

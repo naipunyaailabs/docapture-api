@@ -1,6 +1,6 @@
 import { createErrorResponse, createSuccessResponse } from "../utils/errorHandler";
 import serviceService from "../services/serviceService";
-import { validateApiKey, validateAuthentication } from "../utils/auth";
+import { authenticateRequest } from "../utils/auth";
 
 export async function servicesHandler(req: Request): Promise<Response> {
   try {
@@ -18,12 +18,10 @@ export async function servicesHandler(req: Request): Promise<Response> {
     console.log(`[ServicesHandler] Authorization header: ${authHeader}`);
     
     // Apply authentication to all service routes - allow both API key and user token
-    const authResult = validateAuthentication(req);
-    console.log(`[ServicesHandler] Authentication result:`, authResult);
-    
-    if (!authResult.isValid) {
+    const authResponse = authenticateRequest(req);
+    if (authResponse) {
       console.log(`[ServicesHandler] Authentication failed, returning 401`);
-      return createErrorResponse("Unauthorized", 401);
+      return authResponse;
     }
 
     if (req.method === "GET" && !serviceId) {
