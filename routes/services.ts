@@ -1,6 +1,6 @@
 import { createErrorResponse, createSuccessResponse } from "../utils/errorHandler";
 import serviceService from "../services/serviceService";
-import { validateApiKey } from "../utils/auth";
+import { validateApiKey, validateAuthentication } from "../utils/auth";
 
 export async function servicesHandler(req: Request): Promise<Response> {
   try {
@@ -9,8 +9,9 @@ export async function servicesHandler(req: Request): Promise<Response> {
     // Expected path: /services or /services/{serviceId}
     const serviceId = pathSegments[1]; // e.g., "custom-field-extractor"
 
-    // Apply authentication to all service routes
-    if (!validateApiKey(req)) {
+    // Apply authentication to all service routes - allow both API key and user token
+    const authResult = validateAuthentication(req);
+    if (!authResult.isValid) {
       return createErrorResponse("Unauthorized", 401);
     }
 

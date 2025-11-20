@@ -1,3 +1,5 @@
+import sessionService from "../services/sessionService";
+
 /**
  * Validates API key from Authorization header
  * @param req - The incoming request
@@ -22,6 +24,45 @@ export function validateApiKey(req: Request): boolean {
   }
   
   return apiKey === validApiKey;
+}
+
+/**
+ * Validates user token from Authorization header
+ * @param req - The incoming request
+ * @returns string with userId if valid, null if invalid
+ */
+export function validateUserToken(req: Request): string | null {
+  const authHeader = req.headers.get("Authorization");
+  
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  
+  const token = authHeader.substring(7); // Remove "Bearer " prefix
+  const userId = sessionService.getUserIdFromToken(token);
+  
+  return userId;
+}
+
+/**
+ * Validates either API key or user token from Authorization header
+ * @param req - The incoming request
+ * @returns object with isValid flag and type of authentication
+ */
+export function validateAuthentication(req: Request): { isValid: boolean; type: 'api_key' | 'user_token' | 'none'; userId?: string } {
+  // First try to validate user token
+  const userId = validateUserToken(req);
+  if (userId) {
+    return { isValid: true, type: 'user_token', userId };
+  }
+  
+  // Then try to validate API key
+  if (validateApiKey(req)) {
+    return { isValid: true, type: 'api_key' };
+  }
+  
+  // No valid authentication
+  return { isValid: false, type: 'none' };
 }
 
 /**
