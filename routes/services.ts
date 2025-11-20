@@ -12,10 +12,13 @@ export async function servicesHandler(req: Request): Promise<Response> {
     console.log(`[ServicesHandler] Request received for path: ${url.pathname}`);
     console.log(`[ServicesHandler] Method: ${req.method}`);
     console.log(`[ServicesHandler] Service ID: ${serviceId}`);
+    console.log(`[ServicesHandler] Full URL: ${req.url}`);
     
-    // Log the Authorization header for debugging
-    const authHeader = req.headers.get("Authorization");
-    console.log(`[ServicesHandler] Authorization header: ${authHeader}`);
+    // Log all headers for debugging
+    console.log(`[ServicesHandler] All headers:`);
+    for (const [key, value] of req.headers.entries()) {
+      console.log(`[ServicesHandler]   ${key}: ${value}`);
+    }
     
     // Apply authentication to all service routes - allow both API key and user token
     const authResponse = authenticateRequest(req);

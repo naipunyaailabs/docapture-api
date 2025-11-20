@@ -10,6 +10,8 @@ export function validateApiKey(req: Request): boolean {
   // For now, we'll use a simple check against the environment variable
   const authHeader = req.headers.get("Authorization");
   
+  console.log(`[Auth] Raw Authorization header: ${authHeader}`);
+  
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.log("[Auth] No valid Authorization header found for API key validation");
     return false;
@@ -27,6 +29,10 @@ export function validateApiKey(req: Request): boolean {
     console.warn("[Auth] No API_KEY configured in environment variables. Authentication is disabled.");
     return true;
   }
+  
+  console.log(`[Auth] Comparing API keys:`);
+  console.log(`[Auth] Received (full): ${apiKey}`);
+  console.log(`[Auth] Expected (full): ${validApiKey}`);
   
   const isValid = apiKey === validApiKey;
   console.log(`[Auth] API key validation result: ${isValid}`);
