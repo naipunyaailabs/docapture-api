@@ -37,7 +37,20 @@ DatabaseService.connect().catch(err => {
 const projectHtml = readFileSync(join(__dirname, 'project.html'), 'utf-8');
 
 const addCors = (response: Response) => {
-  response.headers.set("Access-Control-Allow-Origin", "*");
+  // Allow specific origins including api.docapture.com
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "https://api.docapture.com"
+  ];
+  
+  // Check if the request origin is in our allowed list
+  const requestOrigin = response.headers.get("Origin");
+  const originToSet = requestOrigin && allowedOrigins.includes(requestOrigin) 
+    ? requestOrigin 
+    : "https://api.docapture.com"; // Default to our domain if not matched
+  
+  response.headers.set("Access-Control-Allow-Origin", originToSet);
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
   response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
