@@ -23,6 +23,10 @@ import DatabaseService from "./services/database";
 try {
   validateConfig();
   logConfig();
+  
+  // Additional logging for debugging
+  console.log(`[Debug] Raw API_KEY from process.env: ${process.env.API_KEY}`);
+  console.log(`[Debug] API_KEY length: ${process.env.API_KEY?.length || 0}`);
 } catch (error) {
   console.error("Configuration error:", (error as Error).message);
   process.exit(1);

@@ -11,11 +11,15 @@ export function validateApiKey(req: Request): boolean {
   const authHeader = req.headers.get("Authorization");
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("[Auth] No valid Authorization header found");
     return false;
   }
   
   const apiKey = authHeader.substring(7); // Remove "Bearer " prefix
   const validApiKey = process.env.API_KEY;
+  
+  console.log(`[Auth] Received API key: ${apiKey.substring(0, 10)}...`);
+  console.log(`[Auth] Expected API key: ${validApiKey?.substring(0, 10)}...`);
   
   // If no API key is configured, allow all requests (development mode)
   if (!validApiKey) {
@@ -23,7 +27,9 @@ export function validateApiKey(req: Request): boolean {
     return true;
   }
   
-  return apiKey === validApiKey;
+  const isValid = apiKey === validApiKey;
+  console.log(`[Auth] API key validation result: ${isValid}`);
+  return isValid;
 }
 
 /**
@@ -35,12 +41,14 @@ export function validateUserToken(req: Request): string | null {
   const authHeader = req.headers.get("Authorization");
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.log("[Auth] No valid Authorization header for user token validation");
     return null;
   }
   
   const token = authHeader.substring(7); // Remove "Bearer " prefix
   const userId = sessionService.getUserIdFromToken(token);
   
+  console.log(`[Auth] User token validation result: ${userId ? 'valid' : 'invalid'}`);
   return userId;
 }
 
@@ -53,15 +61,18 @@ export function validateAuthentication(req: Request): { isValid: boolean; type: 
   // First try to validate user token
   const userId = validateUserToken(req);
   if (userId) {
+    console.log("[Auth] User token validation successful");
     return { isValid: true, type: 'user_token', userId };
   }
   
   // Then try to validate API key
   if (validateApiKey(req)) {
+    console.log("[Auth] API key validation successful");
     return { isValid: true, type: 'api_key' };
   }
   
   // No valid authentication
+  console.log("[Auth] No valid authentication found");
   return { isValid: false, type: 'none' };
 }
 

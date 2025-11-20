@@ -9,19 +9,33 @@ export async function servicesHandler(req: Request): Promise<Response> {
     // Expected path: /services or /services/{serviceId}
     const serviceId = pathSegments[1]; // e.g., "custom-field-extractor"
 
+    console.log(`[ServicesHandler] Request received for path: ${url.pathname}`);
+    console.log(`[ServicesHandler] Method: ${req.method}`);
+    console.log(`[ServicesHandler] Service ID: ${serviceId}`);
+    
+    // Log the Authorization header for debugging
+    const authHeader = req.headers.get("Authorization");
+    console.log(`[ServicesHandler] Authorization header: ${authHeader}`);
+    
     // Apply authentication to all service routes - allow both API key and user token
     const authResult = validateAuthentication(req);
+    console.log(`[ServicesHandler] Authentication result:`, authResult);
+    
     if (!authResult.isValid) {
+      console.log(`[ServicesHandler] Authentication failed, returning 401`);
       return createErrorResponse("Unauthorized", 401);
     }
 
     if (req.method === "GET" && !serviceId) {
       // GET /services - List all services
+      console.log(`[ServicesHandler] Handling list services request`);
       return await listServicesHandler(req);
     } else if (req.method === "GET" && serviceId) {
       // GET /services/{serviceId} - Get specific service
+      console.log(`[ServicesHandler] Handling get service request for ID: ${serviceId}`);
       return await getServiceHandler(req, serviceId);
     } else {
+      console.log(`[ServicesHandler] Method not allowed: ${req.method}`);
       return createErrorResponse("Method not allowed", 405);
     }
   } catch (error) {
