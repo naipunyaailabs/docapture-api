@@ -37,18 +37,19 @@ DatabaseService.connect().catch(err => {
 const projectHtml = readFileSync(join(__dirname, 'project.html'), 'utf-8');
 
 const addCors = (response: Response, request: Request) => {
-  // Allow specific origins including api.docapture.com
+  // Allow specific origins for production and development
   const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:5000",
-    "https://docapture.com"
+    "https://docapture.com",
+    "https://api.docapture.com"
   ];
   
   // Check if the request origin is in our allowed list
   const requestOrigin = request.headers.get("Origin");
   const originToSet = requestOrigin && allowedOrigins.includes(requestOrigin) 
     ? requestOrigin 
-    : "*"; // Allow all for development but you might want to restrict this
+    : "https://docapture.com"; // Default to UI domain for production
   
   response.headers.set("Access-Control-Allow-Origin", originToSet);
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
