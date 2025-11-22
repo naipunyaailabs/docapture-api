@@ -47,6 +47,10 @@ export async function authHandler(req: Request): Promise<Response> {
       return await verifyEmailHandler(req);
     } else if (req.method === "POST" && path === "resend-verification") {
       return await resendVerificationHandler(req);
+    } else if (req.method === "POST" && path === "request-password-reset") {
+      return await requestPasswordResetHandler(req);
+    } else if (req.method === "POST" && path === "reset-password") {
+      return await resetPasswordHandler(req);
     } else {
       return createErrorResponse("Not Found", 404);
     }
@@ -364,5 +368,72 @@ async function resendVerificationHandler(req: Request): Promise<Response> {
   } catch (error) {
     console.error("[Resend Verification Handler Error]:", error);
     return createErrorResponse("Failed to resend verification email", 500);
+  }
+}
+
+async function requestPasswordResetHandler(req: Request): Promise<Response> {
+  try {
+    const body: any = await req.json();
+    const { email } = body;
+    if (!email) {
+      return createErrorResponse("Email is required", 400);
+    }
+    const user = await userService.findUserByEmail(email);
+    if (!user) {
+      return createSuccessResponse({ message: "If an account exists, a reset email has been sent." });
+    }
+    const resetToken = generateVerificationToken();
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+    const updatedUser = await userService.updateUser(user.userId, {
+      passwordResetToken: resetToken,
+      passwordResetTokenExpiry: resetTokenExpiry,
+    } as any);
+    if (!updatedUser) {
+      return createErrorResponse("Failed to create reset token", 500);
+    }
+    const emailSent = await EmailService.sendPasswordResetEmail(user.email, user.userId, resetToken);
+    if (!emailSent) {
+      console.warn("Failed to send reset email to:", email);
+    }
+    return createSuccessResponse({ message: "Reset email sent." });
+  } catch (error) {
+    console.error("[Request Password Reset Handler Error]:", error);
+    return createErrorResponse("Failed to request password reset", 500);
+  }
+}
+
+async function resetPasswordHandler(req: Request): Promise<Response> {
+  try {
+    const body: any = await req.json();
+    const { userId, secret, password } = body;
+    if (!userId || !secret || !password) {
+      return createErrorResponse("Missing required fields", 400);
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return createErrorResponse("Password must be at least 8 characters long", 400);
+    }
+    const user = await userService.findUserById(userId);
+    if (!user) {
+      return createErrorResponse("Invalid reset request", 400);
+    }
+    if (!user.passwordResetToken || user.passwordResetToken !== secret) {
+      return createErrorResponse("Invalid reset token", 400);
+    }
+    if (!user.passwordResetTokenExpiry || user.passwordResetTokenExpiry < new Date()) {
+      return createErrorResponse("Reset token has expired", 400);
+    }
+    const newHashed = hashPassword(password);
+    const updatedUser = await userService.updateUser(user.userId, {
+      password: newHashed,
+      passwordResetToken: undefined,
+      passwordResetTokenExpiry: undefined,
+    } as any);
+    if (!updatedUser) {
+      return createErrorResponse("Failed to reset password", 500);
+    }
+    return createSuccessResponse({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("[Reset Password Handler Error]:", error);
+    return createErrorResponse("Failed to reset password", 500);
   }
 }
